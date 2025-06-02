@@ -34,14 +34,21 @@ jobs:
       # ── 4. Pack into a .nupkg (using the version from the tag, e.g. v1.0.0 → 1.0.0)
       - name: "📦 Pack NuGet package"
         run: |
-          # Ensure the output folder exists:
+          # 1. Make sure the local nupkgs folder exists
           mkdir -p nupkgs
 
-          # The tag name (e.g. "v1.0.0") becomes the package version "1.0.0":
+          # 2. GitHub automatically checks out the tag into GITHUB_REF,
+          #    which looks like "refs/tags/v1.0.2".  We can extract the tag name:
+          raw_tag="${GITHUB_REF##*/}"       # e.g. "v1.0.2"
+          version="${raw_tag#v}"           # strips leading "v", yields "1.0.2"
+
+          echo "Packing version: '$version' (stripped from tag '$raw_tag')"
+
+          # 3. Pass the cleaned version into MSBuild via /p:PackageVersion
           dotnet pack "Common Shared Services.csproj" \
             --configuration Release \
             --output ./nupkgs \
-            /p:PackageVersion=${{ github.ref_name }}
+            /p:PackageVersion="$version"
 
       # ── 5. Push the generated .nupkg(s) to GitHub Packages
       - name: "🚀 Push to GitHub Packages"

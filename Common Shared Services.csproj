@@ -14,8 +14,6 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <!-- ─── Tell MSBuild to generate a NuGet on build ─── -->
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <!-- Where to place the resulting .nupkg. Here we put it in a folder `nupkgs/` at the repo root. -->
-    <PackageOutputPath>$(SolutionDir)\nupkgs</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
