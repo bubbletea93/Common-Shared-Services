@@ -1,0 +1,57 @@
+# .github/workflows/publish_nuget.yml
+
+name: Publish Common_Shared_Services to GitHub Packages
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'         # Trigger only on tags like v1.0.0, v1.0.1, etc.
+  workflow_dispatch:     # Allows manual runs from the Actions tab
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Check out the repository so we can see "Common Shared Services.csproj"
+      - name: "⬇️ Checkout repository"
+        uses: actions/checkout@v4
+
+      # ── 2. Install .NET 8 SDK so we can build & pack
+      - name: "🦊 Setup .NET 8"
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # ── 3. Restore & Build the project
+      - name: "📦 Restore & Build Release"
+        run: |
+          # Because the .csproj is at the repo root, reference it directly by name,
+          # including spaces. Surround with quotes to avoid shell‐parsing issues.
+          dotnet restore "Common Shared Services.csproj"
+          dotnet build   "Common Shared Services.csproj" --configuration Release
+
+      # ── 4. Pack into a .nupkg (using the version from the tag, e.g. v1.0.0 → 1.0.0)
+      - name: "📦 Pack NuGet package"
+        run: |
+          # Ensure the output folder exists:
+          mkdir -p nupkgs
+
+          # The tag name (e.g. "v1.0.0") becomes the package version "1.0.0":
+          dotnet pack "Common Shared Services.csproj" \
+            --configuration Release \
+            --output ./nupkgs \
+            /p:PackageVersion=${{ github.ref_name }}
+
+      # ── 5. Push the generated .nupkg(s) to GitHub Packages
+      - name: "🚀 Push to GitHub Packages"
+        env:
+          # GITHUB_TOKEN is automatically provided by Actions, with permissions to write packages
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for pkg in ./nupkgs/*.nupkg; do
+            dotnet nuget push "$pkg" \
+              --source "github" \
+              --api-key $GITHUB_TOKEN \
+              --skip-duplicate
+          done
