@@ -63,7 +63,7 @@ jobs:
         run: |
           for pkg in ./nupkgs/*.nupkg; do
             dotnet nuget push "$pkg" \
-              --source "github" \
+              --source "https://nuget.pkg.github.com/bubbletea93/index.json" \
               --api-key $GITHUB_TOKEN \
               --skip-duplicate
           done
