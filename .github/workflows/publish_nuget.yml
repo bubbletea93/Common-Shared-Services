@@ -1,0 +1,50 @@
+name: Publish Common_Shared_Services to GitHub Packages
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'         # Only run when you push a git tag like v1.0.0, v1.0.1, etc.
+  workflow_dispatch:     # Optional: allows manual runs
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the code
+      - name: "⬇️ Checkout repository"
+        uses: actions/checkout@v4
+
+      # 2. Setup .NET 8 SDK
+      - name: "🦊 Setup .NET 8"
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # 3. Restore & build the project
+      - name: "📦 Restore & Build Release"
+        run: |
+          dotnet restore Common_Shared_Services/Common_Shared_Services.csproj
+          dotnet build Common_Shared_Services/Common_Shared_Services.csproj --configuration Release
+
+      # 4. Pack into a .nupkg (GeneratePackageOnBuild=true already did this,
+      #    but running `dotnet pack` ensures version/tags alignment)
+      - name: "📦 Pack NuGet package"
+        run: |
+          dotnet pack Common_Shared_Services/Common_Shared_Services.csproj \
+            --configuration Release \
+            --output ./nupkgs \
+            /p:PackageVersion=${{ github.ref_name }}  # override version from tag (e.g. v1.0.0 → 1.0.0)
+
+      # 5. Authenticate to GitHub Packages & push the .nupkg
+      - name: "🚀 Push to GitHub Packages"
+        env:
+          # The GITHUB_TOKEN is automatically created by GitHub Actions; it has write:packages permission
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for pkg in ./nupkgs/*.nupkg; do
+            dotnet nuget push "$pkg" \
+              --source "github" \
+              --api-key $GITHUB_TOKEN \
+              --skip-duplicate
+          done
