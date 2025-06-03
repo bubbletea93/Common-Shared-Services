@@ -28,4 +28,8 @@
     <Folder Include="nupkgs\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include=".github\workflows\publish_nuget.yml" />
+  </ItemGroup>
+
 </Project>
